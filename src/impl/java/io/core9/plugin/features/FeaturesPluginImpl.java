@@ -78,7 +78,7 @@ public class FeaturesPluginImpl extends AbstractAdminPlugin implements FeaturesP
 				Map<String,Object> body = request.getBodyAsMap();
 				switch(action) {				
 				case "apply":
-					bootstrapFeatureVersion(request.getVirtualHost(), (String) body.get("repo"), (String) body.get("feature"), (String) body.get("version"));
+					bootstrapFeatureVersion(request.getVirtualHost(), (String) body.get("repo"), (String) body.get("feature"), (String) body.get("version"), false);
 					break;
 				case "disable":
 					disableFeature(request.getVirtualHost(), (String) body.get("repo"), (String) body.get("feature"));
@@ -102,11 +102,18 @@ public class FeaturesPluginImpl extends AbstractAdminPlugin implements FeaturesP
 	
 	@Override
 	public void bootstrapFeatureVersion(VirtualHost vhost, String repo, String featurename, String version) throws IOException {
-		String current = getFeatureVersion(vhost, repo, featurename);
-		if(!version.equals(current)) {
-			applyFeature(vhost, repo, featurename, version);
-			setFeatureVersion(vhost, repo, featurename, version);
+		bootstrapFeatureVersion(vhost, repo, featurename, version, true);
+	}
+	
+	public void bootstrapFeatureVersion(VirtualHost vhost, String repo, String featurename, String version, boolean check) throws IOException {
+		if(check) {
+			String current = getFeatureVersion(vhost, repo, featurename);
+			if(version.equals(current)) {
+				return;
+			}
 		}
+		applyFeature(vhost, repo, featurename, version);
+		setFeatureVersion(vhost, repo, featurename, version);
 	}
 
 	/**
