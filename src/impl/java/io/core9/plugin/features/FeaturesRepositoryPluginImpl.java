@@ -8,7 +8,9 @@ import io.core9.plugin.server.VirtualHost;
 import io.core9.plugin.server.request.Request;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -262,6 +264,13 @@ public class FeaturesRepositoryPluginImpl extends AbstractAdminPlugin implements
 	 */
 	private List<Map<String, Object>> readRepositoryFeatures(String repoID) throws IOException {
 		File repo = new File("data/git/" + repoID + "/features.json");
+		if(!repo.exists()) {
+			FileOutputStream fop = new FileOutputStream(repo);
+			OutputStreamWriter writer = new OutputStreamWriter(fop);
+			writer.write("[]");
+			writer.close();
+			fop.close();
+		}
 		return jsonMapper.readValue(repo, new TypeReference<List<Map<String,Object>>>(){});
 	}
 
