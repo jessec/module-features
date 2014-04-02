@@ -21,6 +21,9 @@ import org.apache.commons.lang3.ClassUtils;
 @PluginImplementation
 public class FeaturesBootstrapImpl extends CoreBootStrategy implements FeaturesBootstrap {
 	
+	private static final String PRIVATE_CONFIG_TYPE = "featuresrepo_private";
+	private static final String PUBLIC_CONFIG_TYPE = "featuresrepo_public";
+	
 	private VirtualHost[] vhosts;
 	
 	@InjectPlugin
@@ -38,27 +41,26 @@ public class FeaturesBootstrapImpl extends CoreBootStrategy implements FeaturesB
 	}
 
 	/**
-	 * Create and initialize an internal repository
+	 * Create and initialize a private repository
 	 * @param vhost
 	 */
-	private void handleInternalRepository(VirtualHost vhost) {
-		List<Map<String, Object>> tmpList = config.getConfigList(vhost, "featuresrepo_int");
-		if(tmpList.size() > 0) {
-			initializeRepository(tmpList.get(0));
+	private void handlePrivateRepositories(VirtualHost vhost) {
+		for(Map<String,Object> repo: config.getConfigList(vhost, PRIVATE_CONFIG_TYPE)) {
+			initializeRepository(repo);
 		}
 	}
 	
 	/**
-	 * Create and initialize an external repository
+	 * Create and initialize a public repository
 	 * @param vhost
 	 * @param providers 
 	 */
-	private void handleExternalRepositories(VirtualHost vhost, List<FeaturesProvider> providers) {
-		List<Map<String, Object>> tmpList = config.getConfigList(vhost, "featuresrepo_ext");
+	private void handlePublicRepositories(VirtualHost vhost, List<FeaturesProvider> providers) {
+		List<Map<String, Object>> repoList = config.getConfigList(vhost, PUBLIC_CONFIG_TYPE);
 		Map<FeaturesProvider, String> providersToRepositories = new HashMap<FeaturesProvider, String>();
 		for(FeaturesProvider provider : providers) {
 			boolean available = false;
-			for(Map<String,Object> repoConf : tmpList) {
+			for(Map<String,Object> repoConf : repoList) {
 				available = repoConf.get("path").equals(provider.getRepositoryPath());
 				if(available) {
 					providersToRepositories.put(provider, (String) repoConf.get("_id"));
@@ -70,12 +72,12 @@ public class FeaturesBootstrapImpl extends CoreBootStrategy implements FeaturesB
 				newConf.put("path", provider.getRepositoryPath());
 				newConf.put("user", null);
 				newConf.put("password", null);
-				Map<String,Object> repoConf = config.createConfig(vhost, "featuresrepo_ext", newConf);
-				tmpList.add(repoConf);
+				Map<String,Object> repoConf = config.createConfig(vhost, PUBLIC_CONFIG_TYPE, newConf);
+				repoList.add(repoConf);
 				providersToRepositories.put(provider, (String) repoConf.get("_id"));
 			}
 		}
-		for(Map<String,Object> repoConf : tmpList) {
+		for(Map<String,Object> repoConf : repoList) {
 			initializeRepository(repoConf);
 		}
 		handleFeatureProviders(vhost, providersToRepositories);
@@ -128,8 +130,8 @@ public class FeaturesBootstrapImpl extends CoreBootStrategy implements FeaturesB
 			}
 		}
 		for(VirtualHost vhost : vhosts) {
-			handleInternalRepository(vhost);
-			handleExternalRepositories(vhost, providers);
+			handlePrivateRepositories(vhost);
+			handlePublicRepositories(vhost, providers);
 		}
 	}
 	
